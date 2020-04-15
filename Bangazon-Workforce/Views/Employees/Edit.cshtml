@@ -14,7 +14,7 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="FirstName" class="control-label"></label>
-                <div asp-for="FirstName" class="firstName">
+                <div asp-for="FirstName" class="form-control">
                     @Html.DisplayFor(model => model.FirstName)
                 </div>
                 <span asp-validation-for="FirstName" class="text-danger"></span>
