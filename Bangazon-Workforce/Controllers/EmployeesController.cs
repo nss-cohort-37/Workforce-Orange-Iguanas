@@ -109,7 +109,7 @@ namespace Bangazon_Workforce.Controllers
            
         }
 
-        // POST: Employees/Edit/5
+        // POST: Employees/Edit/Id
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(int id, EmployeeEditViewModel employee)
