@@ -259,22 +259,40 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT Id, Name, StartDate, EndDate, MaxAttendees FROM TrainingProgram WHERE Id = @id";
+                    cmd.CommandText = @"SELECT t.Id, t.Name, t.StartDate, t.EndDate, t.MaxAttendees, e.Id as EmployeeId, e.FirstName, e.LastName
+                                        FROM TrainingProgram t LEFT JOIN EmployeeTraining et on et.TrainingProgramId = t.Id
+                                        Left Join Employee e on e.Id = et.EmployeeId
+                                        WHERE t.Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
                     TrainingProgram trainingProgram = null;
 
-                    if (reader.Read())
+                    while (reader.Read())
                     {
+                        if (trainingProgram == null)
+                        {
                         trainingProgram = new TrainingProgram
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Name = reader.GetString(reader.GetOrdinal("Name")),
                             StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
                             EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
-                            MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees"))
-
+                            MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees")),
+                            Employees = new List<Employee>()                           
                         };
+                    
+                            
+                        }
+                        if (!reader.IsDBNull(reader.GetOrdinal("EmployeeId")))
+                        {
+                        trainingProgram.Employees.Add(new Employee()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                        });
+
+                        }
 
                     }
                     reader.Close();
