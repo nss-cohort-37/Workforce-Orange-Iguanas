@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bangazon_Workforce.Models;
+using Bangazon_Workforce.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -29,31 +31,8 @@ namespace Bangazon_Workforce.Controllers
         // GET: Computers
         public ActionResult Index()
         {
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
-                                        FROM Computer";
-
-                    var reader = cmd.ExecuteReader();
-                    var computers = new List<Computer>();
-
-                    while (reader.Read())
-                    {
-                        computers.Add(new Computer()
-                        {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            Make = reader.GetString(reader.GetOrdinal("Make")),
-                            Model = reader.GetString(reader.GetOrdinal("Model")),
-                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
-                        });
-                    }
-                    reader.Close();
-                    return View(computers);
-                }
-            }
+            var computers = GetListOfComputers();
+            return View(computers);
         }
 
         // GET: Computers/Details/5
@@ -66,21 +45,46 @@ namespace Bangazon_Workforce.Controllers
         // GET: Computers/Create
         public ActionResult Create()
         {
-            return View();
+            var employeeOptions = GetEmployeeOptions();
+            var viewModel = new ComputerCreateViewModel()
+            {
+                EmployeeOptions = employeeOptions
+            };
+            return View(viewModel);
         }
 
         // POST: Computers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Computer computer)
         {
             try
             {
                 // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT
+                                            INTO Computer (PurchaseDate, DecomissionDate, Make, Model)
+                                            OUTPUT INSERTED.Id
+                                            VALUES (@purchaseDate, @decomissionDate, @make, @model)";
 
-                return RedirectToAction(nameof(Index));
+                        cmd.Parameters.Add(new SqlParameter("@purchaseDate", computer.PurchaseDate));
+                        cmd.Parameters.Add(new SqlParameter("@decomissionDate", computer.DecomissionDate));
+                        cmd.Parameters.Add(new SqlParameter("@make", computer.Make));
+                        cmd.Parameters.Add(new SqlParameter("@model", computer.Model));
+
+                        var Id = (int)cmd.ExecuteScalar();
+                        computer.Id = Id;
+
+                        return RedirectToAction(nameof(Index));
+
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
                 return View();
             }
@@ -112,13 +116,14 @@ namespace Bangazon_Workforce.Controllers
         // GET: Computers/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            var getComputerById = GetComputerById(id);
+            return View(getComputerById);
         }
 
         // POST: Computers/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, Computer computer)
         {
             try
             {
@@ -129,6 +134,35 @@ namespace Bangazon_Workforce.Controllers
             catch
             {
                 return View();
+            }
+        }
+
+        public List<Computer> GetListOfComputers()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
+                                        FROM Computer";
+
+                    var reader = cmd.ExecuteReader();
+                    var computers = new List<Computer>();
+
+                    while (reader.Read())
+                    {
+                        computers.Add(new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Model = reader.GetString(reader.GetOrdinal("Model")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                        });
+                    }
+                    reader.Close();
+                    return computers;
+                }
             }
         }
 
@@ -166,6 +200,36 @@ namespace Bangazon_Workforce.Controllers
 
                     reader.Close();
                     return computer;
+                }
+            }
+        }
+
+        private List<SelectListItem> GetEmployeeOptions()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, CONCAT(FirstName, ' ', LastName) AS EmployeeName
+                                        FROM Employee";
+
+                    var reader = cmd.ExecuteReader();
+                    var options = new List<SelectListItem>();
+
+                    while (reader.Read())
+                    {
+                        var option = new SelectListItem()
+                        {
+                            Text = reader.GetString(reader.GetOrdinal("EmployeeName")),
+                            Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString()
+                        };
+
+                        options.Add(option);
+
+                    }
+                    reader.Close();
+                    return options;
                 }
             }
         }
