@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bangazon_Workforce.Models;
+using Bangazon_Workforce.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -93,17 +95,52 @@ namespace Bangazon_Workforce.Controllers
         // GET: Employees/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var employee = GetEmployeeById(id);
+            var DepartmentOptions = GetDepartmentOptions();
+            var ComputerOptions = GetComputerOptions();
+            var viewModel = new EmployeeEditViewModel()
+            {
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                DepartmentOptions = DepartmentOptions,
+                ComputerOptions = ComputerOptions
+            };
+            return View(viewModel);
+           
         }
 
-        // POST: Employees/Edit/5
+        // POST: Employees/Edit/Id
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, EmployeeEditViewModel employee)
         {
             try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Employee 
+                                            SET LastName = @lastName, 
+                                                ComputerId = @computerId,
+                                                DepartmentId = @departmentId
+                                            WHERE Id = @id";
+
+                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@computerId", employee.ComputerId));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        var rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected < 1)
+                        {
+                            return NotFound();
+                        }
+                    }
+                }
+
 
                 return RedirectToAction(nameof(Index));
             }
@@ -133,6 +170,99 @@ namespace Bangazon_Workforce.Controllers
             catch
             {
                 return View();
+            }
+        }
+
+        private List<SelectListItem> GetDepartmentOptions()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, Name FROM Department";
+
+                    var reader = cmd.ExecuteReader();
+                    var options = new List<SelectListItem>();
+
+                    while (reader.Read())
+                    {
+                        var option = new SelectListItem()
+                        {
+                            Text = reader.GetString(reader.GetOrdinal("Name")),
+                            Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString()
+                        };
+
+                        options.Add(option);
+
+                    }
+                    reader.Close();
+                    return options;
+                }
+            }
+        }
+
+        private List<SelectListItem> GetComputerOptions()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, CONCAT(Make, ' ', Model) AS ComputerInfo FROM Computer";
+
+                    var reader = cmd.ExecuteReader();
+                    var options = new List<SelectListItem>();
+
+                    while (reader.Read())
+                    {
+                        var option = new SelectListItem()
+                        {
+                            Text = reader.GetString(reader.GetOrdinal("ComputerInfo")),
+                            Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString()
+                        };
+
+                        options.Add(option);
+
+                    }
+                    reader.Close();
+                    return options;
+                }
+            }
+        }
+
+        private Employee GetEmployeeById(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName FROM Employee e
+                                        LEFT JOIN Department d ON d.Id = e.DepartmentId WHERE e.Id = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    var reader = cmd.ExecuteReader();
+                    Employee employee = null;
+
+                    if (reader.Read())
+                    {
+                        employee = new Employee()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            Department = new Department()
+                            {
+                                Name = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                            }
+                        };
+
+                    }
+                    reader.Close();
+                    return employee;
+                }
             }
         }
     }
