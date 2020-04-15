@@ -46,7 +46,6 @@ namespace Bangazon_Workforce.Controllers
                     var reader = cmd.ExecuteReader();
                     var computers = new List<Computer>();
 
-
                     while (reader.Read())
                     {
                         computers.Add(new Computer()
