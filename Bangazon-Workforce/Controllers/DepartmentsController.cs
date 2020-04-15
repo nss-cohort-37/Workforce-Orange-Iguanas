@@ -46,15 +46,13 @@ namespace Bangazon_Workforce.Controllers
 
                     while (reader.Read())
                     {
-                        var department = new Department
+                        departments.Add(new Department()
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Name = reader.GetString(reader.GetOrdinal("Name")),
                             Budget = reader.GetInt32(reader.GetOrdinal("Budget")),
                             EmployeeCount = reader.GetInt32(reader.GetOrdinal("EmployeeCount"))
-                        };
-
-                        departments.Add(department);
+                        });
                     }
                     reader.Close();
 
@@ -66,7 +64,8 @@ namespace Bangazon_Workforce.Controllers
         // GET: Departments/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            var departmentById = GetDepartmentById(id);
+            return View(departmentById);
         }
 
         // GET: Departments/Create
@@ -153,6 +152,41 @@ namespace Bangazon_Workforce.Controllers
             catch
             {
                 return View();
+            }
+        }
+
+        public Department GetDepartmentById(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.Budget, COUNT(e.DepartmentId) AS EmployeeCount
+                                        FROM Department d
+                                        LEFT JOIN Employee e
+                                        ON d.Id = e.DepartmentId
+                                        WHERE d.Id = @id
+                                        GROUP BY d.Id, d.[Name], d.Budget";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    var reader = cmd.ExecuteReader();
+                    Department department = null;
+
+                    if (reader.Read())
+                    {
+                        department = new Department()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name")),
+                            Budget = reader.GetInt32(reader.GetOrdinal("Budget")),
+                            EmployeeCount = reader.GetInt32(reader.GetOrdinal("EmployeeCount"))
+                        };
+                    }
+                    reader.Close();
+                    return department;
+                }
             }
         }
     }
