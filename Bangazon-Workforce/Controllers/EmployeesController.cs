@@ -277,7 +277,6 @@ namespace Bangazon_Workforce.Controllers
                         employee.TrainingPrograms.Add(new TrainingProgram(){
                             Name = reader.GetString(reader.GetOrdinal("TrainingProgram"))
                         });
-
                     }
                     reader.Close();
                     return employee;
