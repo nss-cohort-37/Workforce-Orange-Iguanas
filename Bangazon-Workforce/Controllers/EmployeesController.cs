@@ -73,19 +73,43 @@ namespace Bangazon_Workforce.Controllers
         // GET: Employees/Create
         public ActionResult Create()
         {
-            return View();
+            var departmentOptions = GetDepartmentOptions();
+            var viewModel = new EmployeeCreateViewModel()
+            {
+                DepartmentOptions = departmentOptions
+            };
+            return View(viewModel);
         }
 
         // POST: Employees/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(EmployeeCreateViewModel employee)
         {
             try
             {
-                // TODO: Add insert logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Employee (FirstName, LastName, Email, IsSupervisor, DepartmentId)
+                                            OUTPUT INSERTED.Id
+                                            VALUES (@firstName, @lastName, @email, @isSupervisor, @departmentId)";
 
-                return RedirectToAction(nameof(Index));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", employee.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@email", employee.Email));
+                        cmd.Parameters.Add(new SqlParameter("@isSupervisor", employee.IsSupervisor));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+
+
+                        var id = (int)cmd.ExecuteScalar();
+                        employee.EmployeeId = id;
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {
