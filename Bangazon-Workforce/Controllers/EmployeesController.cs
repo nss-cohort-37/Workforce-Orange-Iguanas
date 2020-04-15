@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bangazon_Workforce.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -93,7 +94,17 @@ namespace Bangazon_Workforce.Controllers
         // GET: Employees/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var employee = GetEmployeeById(id);
+            var DepartmentOptions = GetDepartmentOptions();
+            //var viewModel = new EmployeeEditViewmodel()
+            //{
+            //    EmployeeId = employee.Id,
+            //    FirstName = employee.FirstName,
+            //    LastName = employee.LastName,
+            //    DepartmentOptions = DepartmentOptions
+            //};
+            //return View(viewModel);
+            return Ok(employee);
         }
 
         // POST: Employees/Edit/5
@@ -133,6 +144,70 @@ namespace Bangazon_Workforce.Controllers
             catch
             {
                 return View();
+            }
+        }
+
+        private List<SelectListItem> GetDepartmentOptions()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, Name FROM Department";
+
+                    var reader = cmd.ExecuteReader();
+                    var options = new List<SelectListItem>();
+
+                    while (reader.Read())
+                    {
+                        var option = new SelectListItem()
+                        {
+                            Text = reader.GetString(reader.GetOrdinal("Name")),
+                            Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString()
+                        };
+
+                        options.Add(option);
+
+                    }
+                    reader.Close();
+                    return options;
+                }
+            }
+        }
+
+        private Employee GetEmployeeById(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name FROM Employee e
+                                        LEFT JOIN Department d ON d.Id = e.DepartmentId WHERE Id = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    var reader = cmd.ExecuteReader();
+                    Employee employee = null;
+
+                    if (reader.Read())
+                    {
+                        employee = new Employee()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            Department = new Department()
+                            {
+                                Name = reader.GetString(reader.GetOrdinal("Name"))
+                            }
+                        };
+
+                    }
+                    reader.Close();
+                    return employee;
+                }
             }
         }
     }
