@@ -66,7 +66,8 @@ namespace Bangazon_Workforce.Controllers
         // GET: Employees/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            var employee = GetEmployeeById(id);
+            return View(employee);
         }
 
         // GET: Employees/Create
@@ -238,26 +239,44 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName FROM Employee e
-                                        LEFT JOIN Department d ON d.Id = e.DepartmentId WHERE e.Id = @id";
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, tp.Name AS TrainingProgram 
+                                        FROM Employee e
+                                        LEFT JOIN Department d ON d.Id = e.DepartmentId 
+                                        LEFT JOIN Computer c ON c.Id = e.ComputerId
+                                        LEFT JOIN EmployeeTraining et ON et.EmployeeId = e.Id
+                                        LEFT JOIN TrainingProgram tp ON et.TrainingProgramId = tp.Id
+                                        WHERE e.Id = @id";
 
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     var reader = cmd.ExecuteReader();
                     Employee employee = null;
 
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        employee = new Employee()
+                        if (employee == null)
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                            Department = new Department()
+
+
+                            employee = new Employee()
                             {
-                                Name = reader.GetString(reader.GetOrdinal("DepartmentName"))
-                            }
-                        };
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                                Department = new Department()
+                                {
+                                    Name = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                                },
+                                Computer = new Computer()
+                                {
+                                    Make = reader.GetString(reader.GetOrdinal("ComputerInfo"))
+                                },
+                                TrainingPrograms = new List<TrainingProgram>()
+                            };
+                        }
+                        employee.TrainingPrograms.Add(new TrainingProgram(){
+                            Name = reader.GetString(reader.GetOrdinal("TrainingProgram"))
+                        });
 
                     }
                     reader.Close();
