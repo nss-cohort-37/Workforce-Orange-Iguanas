@@ -1,0 +1,31 @@
+﻿@model IEnumerable<Bangazon_Workforce.Models.Computer>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Computers</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Model)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+
+                    @Html.ActionLink(item.Model, "Details", new { id = item.Id })
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
