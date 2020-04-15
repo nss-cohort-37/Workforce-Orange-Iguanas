@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bangazon_Workforce.Models;
+using Bangazon_Workforce.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -96,15 +97,16 @@ namespace Bangazon_Workforce.Controllers
         {
             var employee = GetEmployeeById(id);
             var DepartmentOptions = GetDepartmentOptions();
-            //var viewModel = new EmployeeEditViewmodel()
-            //{
-            //    EmployeeId = employee.Id,
-            //    FirstName = employee.FirstName,
-            //    LastName = employee.LastName,
-            //    DepartmentOptions = DepartmentOptions
-            //};
-            //return View(viewModel);
-            return Ok(employee);
+            var ComputerOptions = GetComputerOptions();
+            var viewModel = new EmployeeEditViewModel()
+            {
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                DepartmentOptions = DepartmentOptions,
+                ComputerOptions = ComputerOptions
+            };
+            return View(viewModel);
+           
         }
 
         // POST: Employees/Edit/5
@@ -176,6 +178,35 @@ namespace Bangazon_Workforce.Controllers
             }
         }
 
+        private List<SelectListItem> GetComputerOptions()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, CONCAT(Make, ' ', Model) AS ComputerInfo FROM Computer";
+
+                    var reader = cmd.ExecuteReader();
+                    var options = new List<SelectListItem>();
+
+                    while (reader.Read())
+                    {
+                        var option = new SelectListItem()
+                        {
+                            Text = reader.GetString(reader.GetOrdinal("ComputerInfo")),
+                            Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString()
+                        };
+
+                        options.Add(option);
+
+                    }
+                    reader.Close();
+                    return options;
+                }
+            }
+        }
+
         private Employee GetEmployeeById(int id)
         {
             using (SqlConnection conn = Connection)
@@ -183,8 +214,8 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name FROM Employee e
-                                        LEFT JOIN Department d ON d.Id = e.DepartmentId WHERE Id = @id";
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName FROM Employee e
+                                        LEFT JOIN Department d ON d.Id = e.DepartmentId WHERE e.Id = @id";
 
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
@@ -200,7 +231,7 @@ namespace Bangazon_Workforce.Controllers
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
                             Department = new Department()
                             {
-                                Name = reader.GetString(reader.GetOrdinal("Name"))
+                                Name = reader.GetString(reader.GetOrdinal("DepartmentName"))
                             }
                         };
 
