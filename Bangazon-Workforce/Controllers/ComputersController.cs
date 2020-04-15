@@ -27,7 +27,7 @@ namespace Bangazon_Workforce.Controllers
             }
         }
         // GET: Computers
-        public ActionResult Index()
+        public ActionResult Index(string searchString)
         {
             using (SqlConnection conn = Connection)
             {
@@ -35,10 +35,17 @@ namespace Bangazon_Workforce.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
-                                        FROM Computer";
+                                        FROM Computer ";
+
+                    if (!string.IsNullOrEmpty(searchString))
+                    {
+                        cmd.CommandText += @"WHERE Make LIKE @searchString OR Model LIKE @searchString";
+                        cmd.Parameters.Add(new SqlParameter("@searchString", "%" + searchString + "%"));
+                    }
 
                     var reader = cmd.ExecuteReader();
                     var computers = new List<Computer>();
+
 
                     while (reader.Read())
                     {
