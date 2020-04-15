@@ -239,7 +239,7 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, N/A) AS TrainingProgram 
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, 'N/A') AS TrainingProgram 
                                         FROM Employee e
                                         LEFT JOIN Department d ON d.Id = e.DepartmentId 
                                         LEFT JOIN Computer c ON c.Id = e.ComputerId
