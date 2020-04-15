@@ -280,17 +280,19 @@ namespace Bangazon_Workforce.Controllers
                             MaxAttendees = reader.GetInt32(reader.GetOrdinal("MaxAttendees")),
                             Employees = new List<Employee>()                           
                         };
-
-                            
-                            
+                    
                             
                         }
+                        if (!reader.IsDBNull(reader.GetOrdinal("EmployeeId")))
+                        {
                         trainingProgram.Employees.Add(new Employee()
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                             LastName = reader.GetString(reader.GetOrdinal("LastName"))
                         });
+
+                        }
 
                     }
                     reader.Close();
