@@ -162,7 +162,7 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.Budget, e.Id AS EmployeeId, e.FirstName, e.LastName
+                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.Budget, COALESCE(e.Id, 0) AS EmployeeId, COALESCE(e.FirstName, 'n/a') AS FirstName, COALESCE(e.LastName, 'n/a') AS LastName
                                         FROM Department d
                                         LEFT JOIN Employee e
                                         ON d.Id = e.DepartmentId
@@ -185,12 +185,17 @@ namespace Bangazon_Workforce.Controllers
                                 Employees = new List<Employee>()
                             };
                         }
-                        department.Employees.Add(new Employee()
+                        if (reader.GetInt32(reader.GetOrdinal("EmployeeId")) > 0)
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
-                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                            LastName = reader.GetString(reader.GetOrdinal("LastName"))
-                        });
+                            department.Employees.Add(new Employee()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            });
+                        }
+
+
                     }
                     reader.Close();
                     return department;
