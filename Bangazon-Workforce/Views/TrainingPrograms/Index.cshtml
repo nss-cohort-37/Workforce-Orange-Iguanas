@@ -29,29 +29,32 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
+        @foreach (var item in Model)
+        {
+            <tr>
 
-            <td>
-                
-                @Html.ActionLink(item.Name, "Details", new { id = item.Id })
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EndDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.MaxAttendees)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { id=item.Id  }) |
-                @Html.ActionLink("Delete", "Delete", new {  id=item.Id  })
-            </td>
-        </tr>
-}
+                <td>
+
+                    @Html.ActionLink(item.Name, "Details", new { id = item.Id })
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StartDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.EndDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.MaxAttendees)
+                </td>
+                <td>
+
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                </td>
+            </tr>
+        }
 
 
     </tbody>
+    
 </table>
+<a asp-action="PastTrainingPrograms">View Past Programs</a>
