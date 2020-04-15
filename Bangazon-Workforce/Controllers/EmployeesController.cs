@@ -112,11 +112,35 @@ namespace Bangazon_Workforce.Controllers
         // POST: Employees/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, EmployeeEditViewModel employee)
         {
             try
             {
-                // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Employee 
+                                            SET LastName = @lastName, 
+                                                ComputerId = @computerId,
+                                                DepartmentId = @departmentId
+                                            WHERE Id = @id";
+
+                        cmd.Parameters.Add(new SqlParameter("@lastName", employee.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@departmentId", employee.DepartmentId));
+                        cmd.Parameters.Add(new SqlParameter("@computerId", employee.ComputerId));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        var rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected < 1)
+                        {
+                            return NotFound();
+                        }
+                    }
+                }
+
 
                 return RedirectToAction(nameof(Index));
             }
