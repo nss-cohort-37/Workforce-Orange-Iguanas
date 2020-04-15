@@ -162,27 +162,35 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.Budget, COUNT(e.DepartmentId) AS EmployeeCount
+                    cmd.CommandText = @"SELECT d.Id, d.[Name], d.Budget, e.Id AS EmployeeId, e.FirstName, e.LastName
                                         FROM Department d
                                         LEFT JOIN Employee e
                                         ON d.Id = e.DepartmentId
-                                        WHERE d.Id = @id
-                                        GROUP BY d.Id, d.[Name], d.Budget";
+                                        WHERE d.Id = @id";
 
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     var reader = cmd.ExecuteReader();
                     Department department = null;
 
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        department = new Department()
+                        if (department == null)
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            Name = reader.GetString(reader.GetOrdinal("Name")),
-                            Budget = reader.GetInt32(reader.GetOrdinal("Budget")),
-                            EmployeeCount = reader.GetInt32(reader.GetOrdinal("EmployeeCount"))
-                        };
+                            department = new Department()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Budget = reader.GetInt32(reader.GetOrdinal("Budget")),
+                                Employees = new List<Employee>()
+                            };
+                        }
+                        department.Employees.Add(new Employee()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                        });
                     }
                     reader.Close();
                     return department;
