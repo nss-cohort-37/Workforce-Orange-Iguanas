@@ -6,7 +6,7 @@
 
 <h1>Assign</h1>
 
-<h4>AssignToProgramViewModel</h4>
+<h4>Assign Employee to Training Program</h4>
 <hr />
 <dl>
     <dt class="col-sm-2">
@@ -35,15 +35,14 @@
     </dd>
 
 </dl>
-
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Assign">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            @Html.DropDownList("Text", (MultiSelectList)Model.TrainingPrograms, new { multiple = "multiple" })
-
-            
+            <select asp-for="TrainingProgramIds" asp-items="@Model.TrainingPrograms" multiple>
+            </select>
+            <span asp-validation-for="EnrolledTrainingPrograms"></span>
+            <input type ="hidden" asp-for="EmployeeId" value="@Model.EmployeeId"/>
 
             <div class="form-group">
                 <input type="submit" value="Assign" class="btn btn-primary" />

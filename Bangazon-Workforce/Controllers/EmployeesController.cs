@@ -29,6 +29,8 @@ namespace Bangazon_Workforce.Controllers
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             }
         }
+
+
         public ActionResult Assign(int id)
         {
             var trainingProgramOptions = GetAllTrainingPrograms(id);
@@ -47,11 +49,12 @@ namespace Bangazon_Workforce.Controllers
 
             return View(viewModel);
         }
-
-        public ActionResult Assign(List<AssignToProgramViewModel> employeeTrainingList)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Assign(AssignToProgramViewModel employeeTraining)
         {
 
-            foreach(var employeeTraining in employeeTrainingList) { 
+
 
             try
             {
@@ -60,34 +63,37 @@ namespace Bangazon_Workforce.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
+
+
+                        foreach (var employeeTraininglist in employeeTraining.TrainingProgramIds)
+                        {
+                            cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
                                             OUTPUT INSERTED.Id
                                             VALUES (@EmployeeId, @TrainingProgramId)";
 
-                        cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
-                        cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraining.TrainingProgramId));
-                        
+                            cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
+                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraininglist));
 
 
 
-                        var id = (int)cmd.ExecuteScalar();
-                        employeeTraining.EmployeeId = id;
 
-                        return RedirectToAction(nameof(Index));
+                            var id = (int)cmd.ExecuteScalar();
+                            employeeTraining.EmployeeId = id;
+                        }
                     }
+                        return RedirectToAction(nameof(Index));
                 }
             }
             catch (Exception ex)
             {
                 return View(employeeTraining);
             }
-            }
+                
+
+            
 
 
-
-
-
-            return RedirectToAction(nameof(Index));
+            
         }
 
 
@@ -378,7 +384,7 @@ namespace Bangazon_Workforce.Controllers
                 }
             }
         }
-        private MultiSelectList GetAllTrainingPrograms(int id)
+        private List<SelectListItem> GetAllTrainingPrograms(int id)
         {
             using (SqlConnection conn = Connection)
             {
@@ -411,17 +417,17 @@ namespace Bangazon_Workforce.Controllers
 
                         
                         trainingPrograms.Add(trainingProgram);
-                         var ThetrainingPrograms = new MultiSelectList(trainingPrograms, "Text", "Value");
+                        
 
                        
 
                     
                         
                     }
-                    var MultiSelectTrainingPrograms = new MultiSelectList(trainingPrograms, "Value", "Text");
+                    
                     reader.Close();
 
-                    return MultiSelectTrainingPrograms;
+                    return trainingPrograms;
                 }
             }
         }
