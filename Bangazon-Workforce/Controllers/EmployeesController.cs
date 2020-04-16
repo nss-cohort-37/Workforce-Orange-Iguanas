@@ -29,6 +29,69 @@ namespace Bangazon_Workforce.Controllers
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             }
         }
+        public ActionResult Assign(int id)
+        {
+            var trainingProgramOptions = GetAllTrainingPrograms(id);
+            var CurrentEntrolledTriainingPrograms = GetCurrentEmployeesTrainingPrograms(id);
+            var employee = GetEmployeeById(id);
+            var viewModel = new AssignToProgramViewModel()
+            {
+                EnrolledTrainingPrograms = CurrentEntrolledTriainingPrograms,
+                TrainingPrograms = trainingProgramOptions,
+                EmployeeId = employee.Id,
+                EmployeeFirstName = employee.FirstName,
+                EmployeeLastName = employee.LastName
+
+            };
+
+
+            return View(viewModel);
+        }
+
+        public ActionResult Assign(List<AssignToProgramViewModel> employeeTrainingList)
+        {
+
+            foreach(var employeeTraining in employeeTrainingList) { 
+
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
+                                            OUTPUT INSERTED.Id
+                                            VALUES (@EmployeeId, @TrainingProgramId)";
+
+                        cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
+                        cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraining.TrainingProgramId));
+                        
+
+
+
+                        var id = (int)cmd.ExecuteScalar();
+                        employeeTraining.EmployeeId = id;
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return View(employeeTraining);
+            }
+            }
+
+
+
+
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
+
         // GET: Employees
         public ActionResult Index()
         {
@@ -315,5 +378,98 @@ namespace Bangazon_Workforce.Controllers
                 }
             }
         }
+        private MultiSelectList GetAllTrainingPrograms(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, Name FROM TrainingProgram 
+                                        group by Name,StartDate, MaxAttendees, Id
+                                        having Id NOT IN (SELECT TrainingProgramId FROM EmployeeTraining WHERE EmployeeTraining.EmployeeId = @id)
+                                        and StartDate > GETDATE() and MaxAttendees > COUNT(Id) ";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    var trainingPrograms = new List<SelectListItem>();
+
+
+
+                    while (reader.Read())
+                    {
+                       
+                       
+                           var trainingProgram = new SelectListItem()
+                            {
+
+                                Text = reader.GetString(reader.GetOrdinal("Name")),
+                                Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString(),
+
+
+                            };
+
+                        
+                        trainingPrograms.Add(trainingProgram);
+                         var ThetrainingPrograms = new MultiSelectList(trainingPrograms, "Text", "Value");
+
+                       
+
+                    
+                        
+                    }
+                    var MultiSelectTrainingPrograms = new MultiSelectList(trainingPrograms, "Value", "Text");
+                    reader.Close();
+
+                    return MultiSelectTrainingPrograms;
+                }
+            }
+        }
+
+
+        public List<TrainingProgram> GetCurrentEmployeesTrainingPrograms(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"select tp.Id, tp.Name from TrainingProgram tp
+                                        left join EmployeeTraining et on tp.Id = et.TrainingProgramId
+                                        left join Employee e on e.Id = et.EmployeeId
+                                        group by tp.Id, tp.Name, tp.StartDate, tp.MaxAttendees, e.Id
+                                        having e.Id = @id and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(e.Id)";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    var trainingPrograms = new List<TrainingProgram>();
+
+
+
+                    while (reader.Read())
+                    {
+
+
+                        var trainingProgram = new TrainingProgram()
+                        {
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+
+                        trainingPrograms.Add(trainingProgram);
+
+
+                    }
+                   
+                    reader.Close();
+
+                    return trainingPrograms;
+                }
+            }
+        }
+
+
+
+
     }
 }
