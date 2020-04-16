@@ -48,6 +48,7 @@ namespace Bangazon_Workforce.Controllers
             var employeeOptions = GetEmployeeOptions();
             var viewModel = new ComputerCreateViewModel()
             {
+                PurchaseDate = DateTime.Now,
                 EmployeeOptions = employeeOptions
             };
             return View(viewModel);
@@ -56,7 +57,7 @@ namespace Bangazon_Workforce.Controllers
         // POST: Computers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(Computer computer)
+        public ActionResult Create(ComputerCreateViewModel computer)
         {
             try
             {
@@ -67,19 +68,37 @@ namespace Bangazon_Workforce.Controllers
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"INSERT
-                                            INTO Computer (PurchaseDate, DecomissionDate, Make, Model)
+                                            INTO Computer (PurchaseDate, Make, Model)
                                             OUTPUT INSERTED.Id
-                                            VALUES (@purchaseDate, @decomissionDate, @make, @model)";
+                                            VALUES (@purchaseDate, @make, @model)";
 
                         cmd.Parameters.Add(new SqlParameter("@purchaseDate", computer.PurchaseDate));
-                        cmd.Parameters.Add(new SqlParameter("@decomissionDate", computer.DecomissionDate));
                         cmd.Parameters.Add(new SqlParameter("@make", computer.Make));
                         cmd.Parameters.Add(new SqlParameter("@model", computer.Model));
 
                         var Id = (int)cmd.ExecuteScalar();
                         computer.Id = Id;
 
+                        if (computer.EmployeeId != 0)
+                        {
+                            cmd.CommandText = @"UPDATE Employee
+                                               SET ComputerID = @computerId
+                                               WHERE Id = @employeeId";
+
+                            cmd.Parameters.Add(new SqlParameter("@computerId", computer.Id));
+                            cmd.Parameters.Add(new SqlParameter("@employeeId", computer.EmployeeId));
+
+                            var rowsAffected = cmd.ExecuteNonQuery();
+
+                            if (rowsAffected < 1)
+                            {
+                                return NotFound();
+                            }
+                        }
+
                         return RedirectToAction(nameof(Index));
+
+
 
                     }
                 }
@@ -116,22 +135,84 @@ namespace Bangazon_Workforce.Controllers
         // GET: Computers/Delete/5
         public ActionResult Delete(int id)
         {
-            var getComputerById = GetComputerById(id);
-            return View(getComputerById);
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"Select c.Id, c.Make, c.Model, c.PurchaseDate, COALESCE(e.FirstName, 'n/a') AS FirstName, COALESCE(e.LastName, 'n/a') AS LastName, COALESCE(e.Id, 0) AS EmployeeId
+                                            FROM computer c
+                                            LEFT JOIN employee e 
+                                            on e.ComputerId = c.Id
+                                            WHERE c.Id = @id";
+
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        var reader = cmd.ExecuteReader();
+                        DeleteComputerViewModel computer = null;
+
+                        if (reader.Read())
+                        {
+                            computer = new DeleteComputerViewModel()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Make = reader.GetString(reader.GetOrdinal("Make")),
+                                Model = reader.GetString(reader.GetOrdinal("Model")),
+                                Employee = new Employee()
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                    FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                    LastName = reader.GetString(reader.GetOrdinal("LastName"))
+
+                                }
+                            };
+                        }
+
+                        return View(computer);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return View();
+            }
+
+
         }
 
         // POST: Computers/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, Computer computer)
+        public ActionResult Delete(int id, DeleteComputerViewModel computer)
         {
             try
             {
                 // TODO: Add delete logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE
+                                            FROM Computer
+                                            WHERE Id = @id";
 
-                return RedirectToAction(nameof(Index));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        var rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected < 1)
+                        {
+                            return NotFound();
+                        }
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
                 return View();
             }
