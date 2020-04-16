@@ -29,10 +29,39 @@ namespace Bangazon_Workforce.Controllers
             }
         }
         // GET: Computers
-        public ActionResult Index()
+        public ActionResult Index(string searchString)
         {
-            var computers = GetListOfComputers();
-            return View(computers);
+            using(SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using(SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
+                                        FROM Computer ";
+
+                    if (!string.IsNullOrEmpty(searchString))
+                    {
+                        cmd.CommandText += @"WHERE Make LIKE @searchString OR Model LIKE @searchString";
+                        cmd.Parameters.Add(new SqlParameter("@searchString", "%" + searchString + "%"));
+                    }
+
+                    var reader = cmd.ExecuteReader();
+                    var computers = new List<Computer>();
+
+                    while (reader.Read())
+                    {
+                        computers.Add(new Computer()
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Make = reader.GetString(reader.GetOrdinal("Make")),
+                                Model = reader.GetString(reader.GetOrdinal("Model")),
+                                PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                        });
+                    }
+                    reader.Close();
+                    return View(computers);
+                }
+            }
         }
 
         // GET: Computers/Details/5
@@ -62,10 +91,10 @@ namespace Bangazon_Workforce.Controllers
             try
             {
                 // TODO: Add insert logic here
-                using (SqlConnection conn = Connection)
+                using(SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
+                    using(SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"INSERT
                                             INTO Computer (PurchaseDate, Make, Model)
@@ -97,8 +126,6 @@ namespace Bangazon_Workforce.Controllers
                         }
 
                         return RedirectToAction(nameof(Index));
-
-
 
                     }
                 }
@@ -137,10 +164,10 @@ namespace Bangazon_Workforce.Controllers
         {
             try
             {
-                using (SqlConnection conn = Connection)
+                using(SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
+                    using(SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"Select c.Id, c.Make, c.Model, c.PurchaseDate, COALESCE(e.FirstName, 'n/a') AS FirstName, COALESCE(e.LastName, 'n/a') AS LastName, COALESCE(e.Id, 0) AS EmployeeId
                                             FROM computer c
@@ -162,9 +189,9 @@ namespace Bangazon_Workforce.Controllers
                                 Model = reader.GetString(reader.GetOrdinal("Model")),
                                 Employee = new Employee()
                                 {
-                                    Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
-                                    FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                                    LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
 
                                 }
                             };
@@ -179,7 +206,6 @@ namespace Bangazon_Workforce.Controllers
                 return View();
             }
 
-
         }
 
         // POST: Computers/Delete/5
@@ -190,10 +216,10 @@ namespace Bangazon_Workforce.Controllers
             try
             {
                 // TODO: Add delete logic here
-                using (SqlConnection conn = Connection)
+                using(SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
+                    using(SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"DELETE
                                             FROM Computer
@@ -220,10 +246,10 @@ namespace Bangazon_Workforce.Controllers
 
         public List<Computer> GetListOfComputers()
         {
-            using (SqlConnection conn = Connection)
+            using(SqlConnection conn = Connection)
             {
                 conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
+                using(SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
                                         FROM Computer";
@@ -236,9 +262,9 @@ namespace Bangazon_Workforce.Controllers
                         computers.Add(new Computer()
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            Make = reader.GetString(reader.GetOrdinal("Make")),
-                            Model = reader.GetString(reader.GetOrdinal("Model")),
-                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                                Make = reader.GetString(reader.GetOrdinal("Make")),
+                                Model = reader.GetString(reader.GetOrdinal("Model")),
+                                PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
                         });
                     }
                     reader.Close();
@@ -249,10 +275,10 @@ namespace Bangazon_Workforce.Controllers
 
         public Computer GetComputerById(int id)
         {
-            using (SqlConnection conn = Connection)
+            using(SqlConnection conn = Connection)
             {
                 conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
+                using(SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, PurchaseDate, DecomissionDate, Make, Model
                                         FROM Computer
@@ -287,10 +313,10 @@ namespace Bangazon_Workforce.Controllers
 
         private List<SelectListItem> GetEmployeeOptions()
         {
-            using (SqlConnection conn = Connection)
+            using(SqlConnection conn = Connection)
             {
                 conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
+                using(SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, CONCAT(FirstName, ' ', LastName) AS EmployeeName
                                         FROM Employee";
