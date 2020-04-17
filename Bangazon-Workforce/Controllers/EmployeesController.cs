@@ -55,42 +55,11 @@ namespace Bangazon_Workforce.Controllers
         {
 
 
-
-            try
-            {
-                using (SqlConnection conn = Connection)
-                {
-                    conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
-
-
-                        foreach (var employeeTraininglist in employeeTraining.TrainingProgramIds)
-                        {
-                            cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
-                                            OUTPUT INSERTED.Id
-                                            VALUES (@EmployeeId, @TrainingProgramId)";
-
-                            cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
-                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraininglist));
+            var result = CreateEmployeeTraining(employeeTraining);
 
 
 
-
-                            var id = (int)cmd.ExecuteScalar();
-                            employeeTraining.EmployeeId = id;
-                        }
-                    }
-                        return RedirectToAction(nameof(Index));
-                }
-            }
-            catch (Exception ex)
-            {
-                return View(employeeTraining);
-            }
-                
-
-            
+            return RedirectToAction(nameof(Index));
 
 
             
@@ -391,10 +360,11 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT Id, Name FROM TrainingProgram 
-                                        group by Name,StartDate, MaxAttendees, Id
-                                        having Id NOT IN (SELECT TrainingProgramId FROM EmployeeTraining WHERE EmployeeTraining.EmployeeId = @id)
-                                        and StartDate > GETDATE() and MaxAttendees > COUNT(Id) ";
+                    cmd.CommandText = @"SELECT tp.Id, tp.Name, COUNT(tp.Id) as numberoftendees  FROM TrainingProgram tp
+                                        left join EmployeeTraining et on et.TrainingProgramId = tp.Id
+                                        group by tp.Name,tp.StartDate, tp.MaxAttendees, tp.Id
+                                        having tp.Id NOT IN (SELECT TrainingProgramId FROM EmployeeTraining WHERE EmployeeTraining.EmployeeId = @id)
+                                        and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(et.TrainingProgramId) ";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -475,6 +445,44 @@ namespace Bangazon_Workforce.Controllers
         }
 
 
+
+        private AssignToProgramViewModel CreateEmployeeTraining(AssignToProgramViewModel employeeTraining)
+            {
+              try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        
+
+                        foreach (var employeeTraininglist in employeeTraining.TrainingProgramIds)
+                        {
+                            cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
+                                            OUTPUT INSERTED.Id
+                                            VALUES (@EmployeeId, @TrainingProgramId)";
+
+                            cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
+                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraininglist));
+
+
+
+
+                            var id = (int)cmd.ExecuteScalar();
+                            employeeTraining.Id = id;
+                            cmd.Parameters.Clear();
+                        }
+}
+                    return employeeTraining;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+    }
 
 
     }
