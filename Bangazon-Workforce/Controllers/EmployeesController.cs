@@ -34,11 +34,11 @@ namespace Bangazon_Workforce.Controllers
         public ActionResult Assign(int id)
         {
             var trainingProgramOptions = GetAllTrainingPrograms(id);
-            var CurrentEntrolledTriainingPrograms = GetCurrentEmployeesTrainingPrograms(id);
+            var CurrentEntrolledTraiiningPrograms = GetCurrentEmployeesTrainingPrograms(id);
             var employee = GetEmployeeById(id);
             var viewModel = new AssignToProgramViewModel()
             {
-                EnrolledTrainingPrograms = CurrentEntrolledTriainingPrograms,
+                EnrolledTrainingPrograms = CurrentEntrolledTraiiningPrograms,
                 TrainingPrograms = trainingProgramOptions,
                 EmployeeId = employee.Id,
                 EmployeeFirstName = employee.FirstName,
