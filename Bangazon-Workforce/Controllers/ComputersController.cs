@@ -36,8 +36,10 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
-                                        FROM Computer ";
+                    cmd.CommandText = @"SELECT c.Id, c.Make, c.Model, c.PurchaseDate, COALESCE(e.FirstName, 'N /') AS FirstName, COALESCE(e.LastName, 'A') AS LastName, COALESCE(e.Id, 0) AS EmployeeId
+                                        FROM Computer c
+                                        LEFT JOIN Employee e
+                                        ON c.Id = e.ComputerId ";
 
                     if (!string.IsNullOrEmpty(searchString))
                     {
@@ -47,6 +49,7 @@ namespace Bangazon_Workforce.Controllers
 
                     var reader = cmd.ExecuteReader();
                     var computers = new List<Computer>();
+                    Employee employee = null;
 
                     while (reader.Read())
                     {
@@ -55,7 +58,13 @@ namespace Bangazon_Workforce.Controllers
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Make = reader.GetString(reader.GetOrdinal("Make")),
                             Model = reader.GetString(reader.GetOrdinal("Model")),
-                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Employee = new Employee()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            }
                         });
                     }
                     reader.Close();
