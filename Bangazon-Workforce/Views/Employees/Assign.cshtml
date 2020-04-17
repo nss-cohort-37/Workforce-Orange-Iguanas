@@ -24,29 +24,23 @@
     <dt class="col-sm-2">
         Training Programs
     </dt>
-    <dd class="col-sm-10">
-        <ul>
-        @foreach (var item in Model.EnrolledTrainingPrograms)
-        {
-            <li>@Html.DisplayFor(model => item.Name)</li>
-        }
-        </ul>
-        
-    </dd>
+   
 
 </dl>
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Assign">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <select asp-for="TrainingProgramIds" asp-items="@Model.TrainingPrograms" multiple>
-            </select>
-            <span asp-validation-for="EnrolledTrainingPrograms"></span>
-            <input type ="hidden" asp-for="EmployeeId" value="@Model.EmployeeId"/>
-
             <div class="form-group">
-                <input type="submit" value="Assign" class="btn btn-primary" />
-            </div>
+                <select asp-for="TrainingProgramIds" asp-items="@Model.TrainingProgramOptions" class="form-control" multiple>
+                </select>
+                <span asp-validation-for="TrainingPrograms" class="text-danger"></span>
+                </div>
+                <input type="hidden" asp-for="EmployeeId" value="@Model.EmployeeId" />
+
+                <div class="form-group">
+                    <input type="submit" value="Assign" class="btn btn-primary" />
+                </div>
         </form>
     </div>
 </div>
