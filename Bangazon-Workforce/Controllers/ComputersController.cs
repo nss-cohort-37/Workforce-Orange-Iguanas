@@ -49,7 +49,6 @@ namespace Bangazon_Workforce.Controllers
 
                     var reader = cmd.ExecuteReader();
                     var computers = new List<Computer>();
-                    Employee employee = null;
 
                     while (reader.Read())
                     {
