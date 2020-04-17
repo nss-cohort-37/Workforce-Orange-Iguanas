@@ -29,6 +29,44 @@ namespace Bangazon_Workforce.Controllers
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             }
         }
+
+
+        public ActionResult Assign(int id)
+        {
+            var trainingProgramOptions = GetAllTrainingPrograms(id);
+            var CurrentEntrolledTriainingPrograms = GetCurrentEmployeesTrainingPrograms(id);
+            var employee = GetEmployeeById(id);
+            var viewModel = new AssignToProgramViewModel()
+            {
+                EnrolledTrainingPrograms = CurrentEntrolledTriainingPrograms,
+                TrainingPrograms = trainingProgramOptions,
+                EmployeeId = employee.Id,
+                EmployeeFirstName = employee.FirstName,
+                EmployeeLastName = employee.LastName
+
+            };
+
+
+            return View(viewModel);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Assign(AssignToProgramViewModel employeeTraining)
+        {
+
+
+            var result = CreateEmployeeTraining(employeeTraining);
+
+
+
+            return RedirectToAction(nameof(Index));
+
+
+            
+        }
+
+
+
         // GET: Employees
         public ActionResult Index()
         {
@@ -315,5 +353,137 @@ namespace Bangazon_Workforce.Controllers
                 }
             }
         }
+        private List<SelectListItem> GetAllTrainingPrograms(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT tp.Id, tp.Name, COUNT(tp.Id) as numberoftendees  FROM TrainingProgram tp
+                                        left join EmployeeTraining et on et.TrainingProgramId = tp.Id
+                                        group by tp.Name,tp.StartDate, tp.MaxAttendees, tp.Id
+                                        having tp.Id NOT IN (SELECT TrainingProgramId FROM EmployeeTraining WHERE EmployeeTraining.EmployeeId = @id)
+                                        and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(et.TrainingProgramId) ";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    var trainingPrograms = new List<SelectListItem>();
+
+
+
+                    while (reader.Read())
+                    {
+                       
+                       
+                           var trainingProgram = new SelectListItem()
+                            {
+
+                                Text = reader.GetString(reader.GetOrdinal("Name")),
+                                Value = reader.GetInt32(reader.GetOrdinal("Id")).ToString(),
+
+
+                            };
+
+                        
+                        trainingPrograms.Add(trainingProgram);
+                        
+
+                       
+
+                    
+                        
+                    }
+                    
+                    reader.Close();
+
+                    return trainingPrograms;
+                }
+            }
+        }
+
+
+        public List<TrainingProgram> GetCurrentEmployeesTrainingPrograms(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"select tp.Id, tp.Name from TrainingProgram tp
+                                        left join EmployeeTraining et on tp.Id = et.TrainingProgramId
+                                        left join Employee e on e.Id = et.EmployeeId
+                                        group by tp.Id, tp.Name, tp.StartDate, tp.MaxAttendees, e.Id
+                                        having e.Id = @id and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(e.Id)";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    var trainingPrograms = new List<TrainingProgram>();
+
+
+
+                    while (reader.Read())
+                    {
+
+
+                        var trainingProgram = new TrainingProgram()
+                        {
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+
+                        trainingPrograms.Add(trainingProgram);
+
+
+                    }
+                   
+                    reader.Close();
+
+                    return trainingPrograms;
+                }
+            }
+        }
+
+
+
+        private AssignToProgramViewModel CreateEmployeeTraining(AssignToProgramViewModel employeeTraining)
+            {
+              try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        
+
+                        foreach (var employeeTraininglist in employeeTraining.TrainingProgramIds)
+                        {
+                            cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
+                                            OUTPUT INSERTED.Id
+                                            VALUES (@EmployeeId, @TrainingProgramId)";
+
+                            cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
+                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraininglist));
+
+
+
+
+                            var id = (int)cmd.ExecuteScalar();
+                            employeeTraining.Id = id;
+                            cmd.Parameters.Clear();
+                        }
+}
+                    return employeeTraining;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+    }
+
+
     }
 }
