@@ -33,35 +33,43 @@ namespace Bangazon_Workforce.Controllers
 
         public ActionResult Assign(int id)
         {
-            var trainingProgramOptions = GetAllTrainingPrograms(id);
-            var CurrentEntrolledTraiiningPrograms = GetCurrentEmployeesTrainingPrograms(id);
             var employee = GetEmployeeById(id);
+            var trainingProgramOptions = GetAllTrainingPrograms();
+            //var CurrentEntrolledTrainingPrograms = GetCurrentEmployeesTrainingPrograms(id);
+            var trainingProgramIds = new List<int>();
+
+            foreach( var item in employee.TrainingPrograms)
+            {
+                trainingProgramIds.Add(item.Id);
+            }
             var viewModel = new AssignToProgramViewModel()
             {
-                EnrolledTrainingPrograms = CurrentEntrolledTraiiningPrograms,
-                TrainingPrograms = trainingProgramOptions,
+                //TrainingPrograms = CurrentEntrolledTrainingPrograms,
+                TrainingProgramOptions = trainingProgramOptions,
                 EmployeeId = employee.Id,
                 EmployeeFirstName = employee.FirstName,
-                EmployeeLastName = employee.LastName
-
+                EmployeeLastName = employee.LastName,
+                TrainingProgramIds = trainingProgramIds
             };
-
-
             return View(viewModel);
         }
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Assign(AssignToProgramViewModel employeeTraining)
+        public ActionResult Assign(AssignToProgramViewModel employee)
         {
+            employee.EmployeeTrainings = GetCurrentEmployeesTrainingPrograms(employee.Id);
 
-
-            var result = CreateEmployeeTraining(employeeTraining);
-
-
+            foreach(var id in employee.TrainingProgramIds)
+            {
+                if (!employee.EmployeeTrainings.Any(et => et.TrainingProgramId == id))
+                {
+                    CreateEmployeeTraining(employee, id);
+                }
+            }
 
             return RedirectToAction(nameof(Index));
-
-
             
         }
 
@@ -309,7 +317,7 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, 'N/A') AS TrainingProgram 
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, 'N/A') AS TrainingProgram, COALESCE(tp.Id, 0) AS TrainingProgramId 
                                         FROM Employee e
                                         LEFT JOIN Department d ON d.Id = e.DepartmentId 
                                         LEFT JOIN Computer c ON c.Id = e.ComputerId
@@ -345,7 +353,8 @@ namespace Bangazon_Workforce.Controllers
                             };
                         }
                         employee.TrainingPrograms.Add(new TrainingProgram(){
-                            Name = reader.GetString(reader.GetOrdinal("TrainingProgram"))
+                            Name = reader.GetString(reader.GetOrdinal("TrainingProgram")),
+                            Id = reader.GetInt32(reader.GetOrdinal("TrainingProgramId"))
                         });
                     }
                     reader.Close();
@@ -353,7 +362,7 @@ namespace Bangazon_Workforce.Controllers
                 }
             }
         }
-        private List<SelectListItem> GetAllTrainingPrograms(int id)
+        private List<SelectListItem> GetAllTrainingPrograms()
         {
             using (SqlConnection conn = Connection)
             {
@@ -363,9 +372,8 @@ namespace Bangazon_Workforce.Controllers
                     cmd.CommandText = @"SELECT tp.Id, tp.Name, COUNT(tp.Id) as numberoftendees  FROM TrainingProgram tp
                                         left join EmployeeTraining et on et.TrainingProgramId = tp.Id
                                         group by tp.Name,tp.StartDate, tp.MaxAttendees, tp.Id
-                                        having tp.Id NOT IN (SELECT TrainingProgramId FROM EmployeeTraining WHERE EmployeeTraining.EmployeeId = @id)
-                                        and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(et.TrainingProgramId) ";
-                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                                        having tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(et.TrainingProgramId) ";
+
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     var trainingPrograms = new List<SelectListItem>();
@@ -388,11 +396,6 @@ namespace Bangazon_Workforce.Controllers
                         
                         trainingPrograms.Add(trainingProgram);
                         
-
-                       
-
-                    
-                        
                     }
                     
                     reader.Close();
@@ -403,37 +406,32 @@ namespace Bangazon_Workforce.Controllers
         }
 
 
-        public List<TrainingProgram> GetCurrentEmployeesTrainingPrograms(int id)
+        public List<EmployeeTraining> GetCurrentEmployeesTrainingPrograms(int id)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"select tp.Id, tp.Name from TrainingProgram tp
-                                        left join EmployeeTraining et on tp.Id = et.TrainingProgramId
-                                        left join Employee e on e.Id = et.EmployeeId
-                                        group by tp.Id, tp.Name, tp.StartDate, tp.MaxAttendees, e.Id
-                                        having e.Id = @id and tp.StartDate > GETDATE() and tp.MaxAttendees > COUNT(e.Id)";
+                    cmd.CommandText = @"SELECT et.Id, et.EmployeeId, et.TrainingProgramId
+                                        FROM EmployeeTraining et
+                                        WHERE EmployeeId = @id";
+
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    var trainingPrograms = new List<TrainingProgram>();
+                    var trainingPrograms = new List<EmployeeTraining>();
 
 
 
                     while (reader.Read())
                     {
-
-
-                        var trainingProgram = new TrainingProgram()
+                        trainingPrograms.Add(new EmployeeTraining()
                         {
-                            Name = reader.GetString(reader.GetOrdinal("Name"))
-                        };
-
-
-                        trainingPrograms.Add(trainingProgram);
-
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            EmployeeId = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                            TrainingProgramId = reader.GetInt32(reader.GetOrdinal("TrainingProgramId"))
+                        });
 
                     }
                    
@@ -446,7 +444,7 @@ namespace Bangazon_Workforce.Controllers
 
 
 
-        private AssignToProgramViewModel CreateEmployeeTraining(AssignToProgramViewModel employeeTraining)
+        private AssignToProgramViewModel CreateEmployeeTraining(AssignToProgramViewModel employeeTraining, int trainingProgramId)
             {
               try
             {
@@ -455,26 +453,17 @@ namespace Bangazon_Workforce.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        
-
-                        foreach (var employeeTraininglist in employeeTraining.TrainingProgramIds)
-                        {
+       
                             cmd.CommandText = @"INSERT INTO EmployeeTraining (EmployeeId, TrainingProgramId)
                                             OUTPUT INSERTED.Id
                                             VALUES (@EmployeeId, @TrainingProgramId)";
 
                             cmd.Parameters.Add(new SqlParameter("@EmployeeId", employeeTraining.EmployeeId));
-                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", employeeTraininglist));
-
-
-
+                            cmd.Parameters.Add(new SqlParameter("@TrainingProgramId", trainingProgramId));
 
                             var id = (int)cmd.ExecuteScalar();
-                            employeeTraining.Id = id;
-                            cmd.Parameters.Clear();
-                        }
 }
-                    return employeeTraining;
+                            return employeeTraining;
                 }
             }
             catch (Exception ex)

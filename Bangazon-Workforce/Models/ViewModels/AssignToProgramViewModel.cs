@@ -13,8 +13,9 @@ namespace Bangazon_Workforce.Models.ViewModels
         public string EmployeeFirstName { get; set; }
         public string EmployeeLastName { get; set; }
         public int TrainingProgramId { get; set; }
-        public List<TrainingProgram> EnrolledTrainingPrograms { get; set; }
-        public List<SelectListItem> TrainingPrograms {get;set;}
+        public List<TrainingProgram> TrainingPrograms { get; set; }
+        public List<SelectListItem> TrainingProgramOptions {get;set;}
         public List<int> TrainingProgramIds { get; set; }
+        public List<EmployeeTraining> EmployeeTrainings { get; set; }
     }
 }
