@@ -15,5 +15,6 @@ namespace Bangazon_Workforce.Models
         public DateTime? DecomissionDate { get; set; }
         public string Make { get; set; }
         public string Model { get; set; }
+        public Employee Employee { get; set; }
     }
 }

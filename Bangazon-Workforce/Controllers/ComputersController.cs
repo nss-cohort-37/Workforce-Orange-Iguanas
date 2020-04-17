@@ -31,13 +31,15 @@ namespace Bangazon_Workforce.Controllers
         // GET: Computers
         public ActionResult Index(string searchString)
         {
-            using(SqlConnection conn = Connection)
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
-                                        FROM Computer ";
+                    cmd.CommandText = @"SELECT c.Id, c.Make, c.Model, c.PurchaseDate, COALESCE(e.FirstName, 'N /') AS FirstName, COALESCE(e.LastName, 'A') AS LastName, COALESCE(e.Id, 0) AS EmployeeId
+                                        FROM Computer c
+                                        LEFT JOIN Employee e
+                                        ON c.Id = e.ComputerId ";
 
                     if (!string.IsNullOrEmpty(searchString))
                     {
@@ -47,15 +49,22 @@ namespace Bangazon_Workforce.Controllers
 
                     var reader = cmd.ExecuteReader();
                     var computers = new List<Computer>();
+                    Employee employee = null;
 
                     while (reader.Read())
                     {
                         computers.Add(new Computer()
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                                Make = reader.GetString(reader.GetOrdinal("Make")),
-                                Model = reader.GetString(reader.GetOrdinal("Model")),
-                                PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Model = reader.GetString(reader.GetOrdinal("Model")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate")),
+                            Employee = new Employee()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            }
                         });
                     }
                     reader.Close();
@@ -91,10 +100,10 @@ namespace Bangazon_Workforce.Controllers
             try
             {
                 // TODO: Add insert logic here
-                using(SqlConnection conn = Connection)
+                using (SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using(SqlCommand cmd = conn.CreateCommand())
+                    using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"INSERT
                                             INTO Computer (PurchaseDate, Make, Model)
@@ -164,10 +173,10 @@ namespace Bangazon_Workforce.Controllers
         {
             try
             {
-                using(SqlConnection conn = Connection)
+                using (SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using(SqlCommand cmd = conn.CreateCommand())
+                    using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"Select c.Id, c.Make, c.Model, c.PurchaseDate, COALESCE(e.FirstName, 'n/a') AS FirstName, COALESCE(e.LastName, 'n/a') AS LastName, COALESCE(e.Id, 0) AS EmployeeId
                                             FROM computer c
@@ -189,9 +198,9 @@ namespace Bangazon_Workforce.Controllers
                                 Model = reader.GetString(reader.GetOrdinal("Model")),
                                 Employee = new Employee()
                                 {
-                                Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
-                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                                    Id = reader.GetInt32(reader.GetOrdinal("EmployeeId")),
+                                    FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                    LastName = reader.GetString(reader.GetOrdinal("LastName"))
 
                                 }
                             };
@@ -216,10 +225,10 @@ namespace Bangazon_Workforce.Controllers
             try
             {
                 // TODO: Add delete logic here
-                using(SqlConnection conn = Connection)
+                using (SqlConnection conn = Connection)
                 {
                     conn.Open();
-                    using(SqlCommand cmd = conn.CreateCommand())
+                    using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"DELETE
                                             FROM Computer
@@ -246,10 +255,10 @@ namespace Bangazon_Workforce.Controllers
 
         public List<Computer> GetListOfComputers()
         {
-            using(SqlConnection conn = Connection)
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, Make, Model, PurchaseDate
                                         FROM Computer";
@@ -262,9 +271,9 @@ namespace Bangazon_Workforce.Controllers
                         computers.Add(new Computer()
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                                Make = reader.GetString(reader.GetOrdinal("Make")),
-                                Model = reader.GetString(reader.GetOrdinal("Model")),
-                                PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
+                            Make = reader.GetString(reader.GetOrdinal("Make")),
+                            Model = reader.GetString(reader.GetOrdinal("Model")),
+                            PurchaseDate = reader.GetDateTime(reader.GetOrdinal("PurchaseDate"))
                         });
                     }
                     reader.Close();
@@ -275,10 +284,10 @@ namespace Bangazon_Workforce.Controllers
 
         public Computer GetComputerById(int id)
         {
-            using(SqlConnection conn = Connection)
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, PurchaseDate, DecomissionDate, Make, Model
                                         FROM Computer
@@ -313,10 +322,10 @@ namespace Bangazon_Workforce.Controllers
 
         private List<SelectListItem> GetEmployeeOptions()
         {
-            using(SqlConnection conn = Connection)
+            using (SqlConnection conn = Connection)
             {
                 conn.Open();
-                using(SqlCommand cmd = conn.CreateCommand())
+                using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"SELECT Id, CONCAT(FirstName, ' ', LastName) AS EmployeeName
                                         FROM Employee";
