@@ -9,7 +9,7 @@
 <div>
     <h4>Employee</h4>
     <hr />
-    @Html.ActionLink("Assign to Training Program", "Assign", new { id = Model.Id })
+    @Html.ActionLink("Assign to Training Program", "Assign", new { id = Model.Id }, new { @class = "btn btn-link"})
     <dl class="row">
         <dt class="col-sm-2">
             First Name
@@ -53,6 +53,6 @@
     </dl>
 </div>
 <div>
-    @Html.ActionLink("Edit", "Edit", new {id = Model.Id }) |
-    <a asp-action="Index">Back to List</a>
+    @Html.ActionLink("Edit", "Edit", new {id = Model.Id }, new { @class = "btn btn-link" }) |
+    <a class="btn btn-link" asp-action="Index">Back to List</a>
 </div>
