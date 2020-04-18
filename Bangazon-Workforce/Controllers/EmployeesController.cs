@@ -35,7 +35,6 @@ namespace Bangazon_Workforce.Controllers
         {
             var employee = GetEmployeeById(id);
             var trainingProgramOptions = GetAllTrainingPrograms();
-            //var CurrentEntrolledTrainingPrograms = GetCurrentEmployeesTrainingPrograms(id);
             var trainingProgramIds = new List<int>();
 
             foreach( var item in employee.TrainingPrograms)
@@ -44,7 +43,6 @@ namespace Bangazon_Workforce.Controllers
             }
             var viewModel = new AssignToProgramViewModel()
             {
-                //TrainingPrograms = CurrentEntrolledTrainingPrograms,
                 TrainingProgramOptions = trainingProgramOptions,
                 EmployeeId = employee.Id,
                 EmployeeFirstName = employee.FirstName,
