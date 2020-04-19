@@ -3,10 +3,9 @@
 @{
     ViewData["Title"] = "Delete";
 }
-
-<h1>Delete</h1>
-
-<h3>Are you sure you want to delete this?</h3>
+<br/>
+<h1>Confirm Delete</h1>
+<br/>
 <div>
     <h4>Computer</h4>
     <hr />
@@ -34,11 +33,11 @@
             else
             {
                 <form asp-action="Delete">
-                    <input type="submit" value="Delete" class="btn btn-danger" />
+                    <input type="submit" value="Delete" class="btn btn-secondary" />
                 </form>
             }
         </dd>
     </dl>
 
-    <a asp-action="Index">Back to List</a>
+    <a class="btn btn-link" asp-action="Index">Back to List</a>
 </div>

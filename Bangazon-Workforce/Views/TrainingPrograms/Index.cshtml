@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Index";
 }
-
+    <br />
 <h1>Training Programs</h1>
 
 <p>
@@ -38,7 +38,7 @@
 
                 <td>
 
-                    @Html.ActionLink(item.Name, "Details", new { id = item.Id })
+                    @Html.ActionLink(item.Name, "Details", new { id = item.Id }, new { @class = "btn btn-link" })
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.StartDate)
@@ -51,7 +51,7 @@
                 </td>
                 <td>
 
-                    @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                    @Html.ActionLink("Delete", "Delete", new { id = item.Id }, new { @class = "btn btn-link" })
                 </td>
             </tr>
         }
@@ -60,6 +60,6 @@
     </tbody>
     
 </table>
-<a class="btn btn-link"
+<a class="btn btn-secondary"
     asp-action="PastTrainingPrograms">View Past Programs
 </a>

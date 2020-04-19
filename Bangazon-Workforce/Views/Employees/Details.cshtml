@@ -3,13 +3,12 @@
 @{
     ViewData["Title"] = "Details";
 }
-
-<h1>Details</h1>
-
+    <br />
+<h1>Employee Details</h1>
 <div>
-    <h4>Employee</h4>
+    @Html.ActionLink("Assign to Training Program", "Assign", new { id = Model.Id }, new { @class = "btn btn-link" })
     <hr />
-    @Html.ActionLink("Assign to Training Program", "Assign", new { id = Model.Id }, new { @class = "btn btn-link"})
+    <br />
     <dl class="row">
         <dt class="col-sm-2">
             First Name

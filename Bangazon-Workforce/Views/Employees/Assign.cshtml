@@ -3,23 +3,15 @@
 @{
     ViewData["Title"] = "Assign";
 }
-
-<h1>Assign</h1>
-
-<h4>Assign Employee to Training Program</h4>
+<br/>
+<h3>Assign Training Program</h3>
 <hr />
 <dl>
     <dt class="col-sm-2">
-        First Name
+        Employee Name
     </dt>
     <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.EmployeeFirstName)
-    </dd>
-    <dt class="col-sm-2">
-        Last Name
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.EmployeeLastName)
+        @Html.DisplayFor(model => model.EmployeeFirstName) @Html.DisplayFor(model => model.EmployeeLastName)
     </dd>
     <dt class="col-sm-2">
         Training Programs
