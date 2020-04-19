@@ -118,7 +118,7 @@ namespace Bangazon_Workforce.Controllers
         public ActionResult Create()
         {
             var departmentOptions = GetDepartmentOptions();
-            var computerOptions = GetComputerOptions();
+            var computerOptions = GetComputerOptions(0);
             var viewModel = new EmployeeCreateViewModel()
             {
                 DepartmentOptions = departmentOptions,
@@ -170,12 +170,14 @@ namespace Bangazon_Workforce.Controllers
         {
             var employee = GetEmployeeById(id);
             var DepartmentOptions = GetDepartmentOptions();
-            var ComputerOptions = GetComputerOptions();
+            var ComputerOptions = GetComputerOptions(id);
             var viewModel = new EmployeeEditViewModel()
             {
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
                 DepartmentOptions = DepartmentOptions,
+                DepartmentId = employee.Department.Id,
+                ComputerId = employee.Computer.Id,
                 ComputerOptions = ComputerOptions
             };
             return View(viewModel);
@@ -275,18 +277,20 @@ namespace Bangazon_Workforce.Controllers
             }
         }
 
-        private List<SelectListItem> GetComputerOptions()
+        private List<SelectListItem> GetComputerOptions(int id)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT c.Id, CONCAT(c.Make, ' ', c.Model) AS ComputerInfo 
+                    cmd.CommandText = @"SELECT c.Id, CONCAT(c.Make, ' ', c.Model) AS ComputerInfo, e.ComputerId 
                                         FROM Computer c
                                         LEFT JOIN Employee e on e.ComputerId = c.Id
                                         WHERE c.DecomissionDate IS NULL 
-                                        AND c.Id NOT IN (SELECT ComputerId FROM Employee)";
+                                        AND e.ComputerId IS NULL
+                                        OR (c.Id = e.ComputerId AND e.Id = @id)";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     var reader = cmd.ExecuteReader();
                     var options = new List<SelectListItem>();
@@ -315,7 +319,7 @@ namespace Bangazon_Workforce.Controllers
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, 'N/A') AS TrainingProgram, COALESCE(tp.Id, 0) AS TrainingProgramId 
+                    cmd.CommandText = @"SELECT e.Id, e.FirstName, e.LastName, d.Name AS DepartmentName, d.Id as DepartmentId, c.Id as ComputerId, CONCAT( c.Make, ' ', c.Model) AS ComputerInfo, COALESCE(tp.Name, 'N/A') AS TrainingProgram, COALESCE(tp.Id, 0) AS TrainingProgramId 
                                         FROM Employee e
                                         LEFT JOIN Department d ON d.Id = e.DepartmentId 
                                         LEFT JOIN Computer c ON c.Id = e.ComputerId
@@ -341,11 +345,13 @@ namespace Bangazon_Workforce.Controllers
                                 LastName = reader.GetString(reader.GetOrdinal("LastName")),
                                 Department = new Department()
                                 {
-                                    Name = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                                    Name = reader.GetString(reader.GetOrdinal("DepartmentName")),
+                                    Id = reader.GetInt32(reader.GetOrdinal("DepartmentId"))
                                 },
                                 Computer = new Computer()
                                 {
-                                    Make = reader.GetString(reader.GetOrdinal("ComputerInfo"))
+                                    Make = reader.GetString(reader.GetOrdinal("ComputerInfo")),
+                                    Id = reader.GetInt32(reader.GetOrdinal("ComputerId"))
                                 },
                                 TrainingPrograms = new List<TrainingProgram>()
                             };
