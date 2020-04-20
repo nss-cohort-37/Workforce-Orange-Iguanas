@@ -234,10 +234,14 @@ namespace Bangazon_Workforce.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"DELETE FROM TrainingProgram WHERE Id = @id";
+                        cmd.CommandText = @"DELETE FROM EmployeeTraining WHERE TrainingProgramId = @id";
                         cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.ExecuteNonQuery();
 
-                        int rowsAffected = cmd.ExecuteNonQuery();
+                        cmd.CommandText = @"DELETE FROM TrainingProgram WHERE Id = @id";
+                      
+
+                        cmd.ExecuteNonQuery();
 
                         return RedirectToAction(nameof(Index));
                     }

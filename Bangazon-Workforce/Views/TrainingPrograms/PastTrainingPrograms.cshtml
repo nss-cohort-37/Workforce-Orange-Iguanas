@@ -3,9 +3,10 @@
 @{
     ViewData["Title"] = "PastTrainingPrograms";
 }
-
-<h1>PastTrainingPrograms</h1>
-
+    <br />
+<h1>Past Training Programs</h1>
+<hr/>
+<br />
 <table class="table">
     <thead>
         <tr>
@@ -30,7 +31,7 @@
         <tr>
 
             <td>
-                @Html.ActionLink(item.Name, "PastDetails", new { id = item.Id })
+                @Html.ActionLink(item.Name, "PastDetails", new { id = item.Id }, new { @class = "btn btn-link" })
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.StartDate)
@@ -48,4 +49,4 @@
 }
     </tbody>
 </table>
-<a asp-action="Index">View Future Programs</a>
+<a class="btn btn-secondary" asp-action="Index">View Future Programs</a>

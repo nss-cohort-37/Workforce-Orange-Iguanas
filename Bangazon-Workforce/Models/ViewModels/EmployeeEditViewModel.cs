@@ -13,7 +13,7 @@ namespace Bangazon_Workforce.Models.ViewModels
         public string LastName { get; set; }
         [Display(Name = "Computer")]
         [Required]
-        public int ComputerId { get; set; }
+        public int? ComputerId { get; set; }
         public List<SelectListItem> ComputerOptions { get; set; }
         [Display(Name = "Department")]
         [Required]
